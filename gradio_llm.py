@@ -69,7 +69,7 @@ class SyntaxAgent:
     def create_plan(self, code):
         """Create a plan for analyzing the code's syntax."""
         plan_prompt = f"""
-        You are a syntax analysis expert. Create a detailed step-by-step plan to identify syntax issues in the provided code.
+        You are a syntax analysis expert. Create a simple step-by-step plan of max 5 simple steps to identify syntax issues in the provided code.
         Ensure your plan covers all possible aspects of syntax analysis.
 
         Do not analyse or improve/revise the code.
@@ -91,8 +91,8 @@ class SyntaxAgent:
         - Tool Feedback: {tool_feedback}
         - Code: {code}
         
-        Generate a concise and actionable report summarizing all syntax issues and suggestions for improvements.
-        Do not improve/revise the code. Only give suggestions to the user, that has to learn how to do it on his own.
+        Generate a short report summarizing all syntax issues within the code.
+        Do not improve/revise the code.
         """
         return query_gradio_client(report_prompt)
 
@@ -113,8 +113,8 @@ class SemanticsAgent:
     def create_plan(self, code):
         """Create a plan for analyzing the code's semantics."""
         plan_prompt = f"""
-        You are a semantics analysis expert. Create a detailed step-by-step plan to identify semantic issues in the provided code.
-        Ensure your plan covers all possible aspects of semantic analysis, including type checks, logic errors, and edge cases.
+        You are a semantics analysis expert. Create a simple step-by-step plan of max 5 simple steps to identify semantic issues in the provided code.
+        Ensure your plan covers possible aspects of semantic analysis, including type checks, logic errors, and edge cases.
         Do not analyse or improve/revise the code yet. 
         
         Code:
@@ -133,8 +133,8 @@ class SemanticsAgent:
         - Analysis Plan: {plan}
         - Tool Feedback: {tool_feedback}
         - Code: {code}
-        Generate a concise and actionable report summarizing all semantic issues and suggestions for improvements.
-        Do not improve/revise the code. Only give suggestions to the user, that has to learn how to do it on his own.
+        Generate a simple report summarizing all semantic issues within the code.
+        Do not improve/revise the code.
 
         """
         return query_gradio_client(report_prompt)
@@ -155,7 +155,7 @@ class OrchestratorAgent:
         self.summary_prompt_template = PromptTemplate(
             input_variables=["agent_feedback"],
             template="""You are an assistant summarizing the feedback from syntax and semantics analysis of the code. 
-            Create a concise summary of the feedback below and ensure it provides actionable insights to the user.
+            Create a short summary of the feedback below and ensure it provides actionable insights to the user.
             If there are multiple faults with the code, make sure you summarize them all in your response. 
             If the syntax and semantic Agents both provided feedback to the same fault, do not list it twice. 
 
