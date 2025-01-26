@@ -3,7 +3,7 @@ from langchain.prompts import PromptTemplate
 from langchain.agents import Tool
 
 # Gradio Client Setup
-client = Client("Nymbo/Qwen2.5-Coder-32B-Instruct-Serverless")
+client = Client("Krass/Qwen-Qwen2.5-Coder-32B-Instruct")
 
 
 # Helper function for querying Gradio Client
@@ -11,10 +11,10 @@ def query_gradio_client(prompt):
     """Query the Gradio API endpoint."""
     result = client.predict(
         message=prompt,
-        system_message="",
-        max_tokens=8196,
-        temperature=0.0,
-        top_p=0.95,
+        # system_message="",
+        # max_tokens=8196,
+        # temperature=0.0,
+        # top_p=0.95,
         api_name="/chat"
     )
     return result
