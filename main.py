@@ -3,7 +3,7 @@ from langchain.prompts import PromptTemplate
 from langchain.agents import Tool
 
 # Hugging Face Inference API Client
-client = InferenceClient(api_key="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")
+client = InferenceClient(api_key="xxx")
 
 
 # Helper function for querying Hugging Face Inference API

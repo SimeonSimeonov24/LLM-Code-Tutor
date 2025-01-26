@@ -146,48 +146,166 @@ class SemanticsAgent:
         tool_feedback = self.analyze_semantics(code)
         return self.generate_report(plan, tool_feedback, code)
 
-
-
-# Orchestrator Agent
 class OrchestratorAgent:
-    def __init__(self):
+    def __init__(self, agents):
         self.name = "Orchestrator"
-        self.summary_prompt_template = PromptTemplate(
-            input_variables=["agent_feedback"],
-            template="""You are an assistant summarizing the feedback from syntax and semantics analysis of the code. 
-            Create a short summary of the feedback below and ensure it provides actionable insights to the user.
-            If there are multiple faults with the code, make sure you summarize them all in your response. 
-            If the syntax and semantic Agents both provided feedback to the same fault, do not list it twice. 
+        self.agents = agents
+        self.execution_plan = []
 
-            Feedback from Agents:
-            {agent_feedback}
-            """
-        )
+    def create_plan_with_llm(self, code):
+        """Use the LLM to generate a dynamic execution plan."""
+        # Step 1: Generate the initial plan with LLM
+        plan_prompt = f"""
+        You are an assistant coordinating a code analysis process. The available agents are:
+        {', '.join(agent.name for agent in self.agents)}.
+        Based on the code below, create an analysis plan. Indicate the order in which agents should run with a very short explanation of what the agents do.
+        Keep it very simple, only a few lines.
 
-    def summarize_feedback(self, feedback):
-        """Summarize the feedback from all agents."""
-        summary_prompt = self.summary_prompt_template.format(agent_feedback=feedback)
-        return query_gradio_client(summary_prompt)
+        Code:
+        {code}
+        """
+        response = query_gradio_client(plan_prompt)
 
-    def execute(self, code, agents):
-        """Execute the analysis workflow."""
+        self.execution_plan = self.parse_plan(response)
+
+        if not self.execution_plan:
+            print("Warning: Execution plan is empty. Check the LLM response and parsed agent names.")
+
+        return response
+
+    def parse_plan(self, plan):        
+        
+        self.execution_plan = []
+        # Step 2: Parse the agent names from the plan using an additional LLM prompt
+        parse_plan_prompt = f"""
+        You have the task to parse the necessary agents from the given plan:
+        {plan}
+        Make sure you only answer with the names of the agents.
+        Example:
+        ["SyntaxAgent", "SemanticsAgent"]
+        """
+        parsed_plan = query_gradio_client(parse_plan_prompt)
+        print(f"Parsed Agent Names:\n{parsed_plan}")  # Debugging: Log the parsed agent names
+
+        # Step 3: Convert parsed plan into Python list
+        try:
+            agent_names = eval(parsed_plan)  # Safely evaluate the parsed plan (expecting a list of strings)
+            if not isinstance(agent_names, list) or not all(isinstance(name, str) for name in agent_names):
+                raise ValueError("Parsed plan is not a valid list of agent names.")
+        except Exception as e:
+            print(f"Error parsing agent names: {e}")
+            agent_names = []
+
+        # Step 3: Match the parsed agent names to the corresponding agent objects
+        matched_agents = []
+        unmatched_agents = []
+        for name in agent_names:
+            found_agent = next((agent for agent in self.agents if agent.name == name), None)
+            if found_agent:
+                matched_agents.append(found_agent)
+            else:
+                unmatched_agents.append(name)
+
+        # Handle unmatched agents
+        if unmatched_agents:
+            print(f"Warning: The following agents were not found: {unmatched_agents}")
+
+        # Step 4: Return the matched agents as the execution plan
+        return matched_agents
+
+    def adjust_plan_with_llm(self, initial_plan, user_feedback):
+        """Use the LLM to adjust the execution plan based on user input."""
+        adjust_prompt = f"""
+        The user has requested adjustments to the plan:
+        {initial_plan}
+
+        User Feedback: {user_feedback}
+
+        Provide an updated execution plan based on the user's instructions. Clearly list the agents to be run and their order.
+        """
+        response = query_gradio_client(adjust_prompt)
+
+        self.execution_plan = self.parse_plan(response)
+
+        return response
+
+    def decide_next_action(self, last_feedback=""):
+        """Prompt the user and use their input to determine the next step."""
+        print(f"Current Plan: {[agent.name for agent in self.execution_plan]}")
+        if last_feedback:
+            print(f"Last Feedback:\n{last_feedback}")
+
+        user_input = input(
+            "\nWhat would you like to do next? Options:\n"
+            "- 'Run' to execute the plan.\n"
+            "- 'Adjust' to modify the plan.\n"
+            "- 'Exit' to finish the workflow.\n"
+            "Your choice: "
+        ).strip().lower()
+
+        decision_prompt = f"""
+        You are an assistant managing a workflow for analyzing code. 
+        The current plan is:
+        {[agent.name for agent in self.execution_plan]}
+
+        The last feedback was:
+        {last_feedback}
+
+        The user has input the following: "{user_input}".
+
+        Based on this input, determine the next step. Choose one of the following actions:
+        - 'run' to execute the plan. If the user has said to execute or run.
+        - 'adjust' to adjust the plan. If the user said "adjust" or has asked for adjustments.
+        - 'exit' to end the workflow. If the user wants to cancel or exit.
+
+        Return only the action as a single word: 'run', 'adjust', or 'exit'.
+        """
+        return query_gradio_client(decision_prompt).strip().lower()
+
+    def execute(self, code):
+        """Execute the analysis workflow based on the adjusted plan."""
         feedback_list = []
-        for agent in agents:
+        for agent in self.execution_plan:
             feedback = agent.run(code)
-            print(f"Feedback from Agent: {agent} is {feedback}")
             feedback_list.append(f"{agent.name} Feedback:\n{feedback}")
-        combined_feedback = "\n\n".join(feedback_list)
+        return "\n\n".join(feedback_list)
 
-        # Summarize the feedback
-        summary = self.summarize_feedback(combined_feedback)
-        return summary
+    def run_workflow(self, code):
+        """Run the orchestrator workflow, allowing LLM-driven decisions."""
+        # Step 1: Create the initial plan
+        print("Creating Initial Plan...")
+        initial_plan = self.create_plan_with_llm(code)
+        print("Initial Plan:")
+        print(initial_plan)
 
+        last_feedback = ""
+        while True:
+            # Prompt the user and let the LLM process their input
+            next_action = self.decide_next_action(last_feedback)
+
+            if next_action == "run":
+                print("Executing the analysis...")
+                last_feedback = self.execute(code)
+                print("Analysis Feedback:")
+                print(last_feedback)
+            elif next_action == "adjust":
+                user_feedback = input("Provide adjustments to the plan: ")
+                adjusted_plan = self.adjust_plan_with_llm(initial_plan, user_feedback)
+                print("Adjusted Plan:")
+                print(adjusted_plan)
+                initial_plan = adjusted_plan  # Update the plan for future adjustments
+            elif next_action == "exit":
+                print("Exiting the workflow. Goodbye!")
+                break
+            else:
+                print("Unexpected response from the LLM. Ending the workflow.")
+                break
 # Example Usage
 if __name__ == "__main__":
     # Initialize Agents
     syntax_agent = SyntaxAgent(syntax_tool)
     semantics_agent = SemanticsAgent(semantics_tool)
-    orchestrator = OrchestratorAgent()
+    orchestrator = OrchestratorAgent(agents=[syntax_agent, semantics_agent])
 
     # Example Code to Analyze
     code_snippet = """
@@ -207,7 +325,5 @@ print(result)
 print(max_value)
     """
 
-    # Execute Workflow
-    summary = orchestrator.execute(code_snippet, agents=[syntax_agent, semantics_agent])
-    print("Final Summary from Orchestrator:")
-    print(summary)
+    # Run the orchestrator workflow
+    orchestrator.run_workflow(code_snippet)
