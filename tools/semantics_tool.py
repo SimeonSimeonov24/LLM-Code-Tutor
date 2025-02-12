@@ -1,9 +1,9 @@
 from langchain.agents import Tool
+import ast
 
 # Define Semantics Analysis Tool
 def semantics_analysis(code):
     """Analyze the code for semantic issues."""
-    import ast
     try:
         # Parse the code to generate the Abstract Syntax Tree (AST)
         tree = ast.parse(code)
