@@ -38,7 +38,11 @@ class OrchestratorAgent:
         except Exception as e:
             print(f"Error parsing agent names: {e}")
             agent_names = []
-        matched_agents = [agent for agent in self.agents if agent.name in agent_names]
+
+        agent_dict = {agent.name: agent for agent in self.agents}
+
+        matched_agents = [agent_dict[name] for name in agent_names if name in agent_dict]
+
         return matched_agents
 
     def adjust_plan_with_llm(self, initial_plan, user_feedback):
