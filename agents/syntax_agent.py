@@ -47,9 +47,9 @@ class SyntaxAgent:
         
     def run(self, code):
         """Execute the syntax checking workflow with user interaction for fixing errors."""
+        plan = self.create_plan(code)
+        print(f"Syntax Agent Plan: {plan}")
         while True:
-            plan = self.create_plan(code)
-            print(f"Syntax Agent Plan: {plan}")
             tool_analysis = self.analyze_syntax(code)
             report = self.generate_report(plan, tool_analysis, code)
 
@@ -81,5 +81,6 @@ max_value = find_maximum([3,6,1,9])
 print(result)
 print(max_value)
     """
+            print(f"Corrected Code: {code}")
             if not code.strip():
                 print("No input received. Keeping the previous code.")
