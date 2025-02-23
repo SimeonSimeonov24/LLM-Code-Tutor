@@ -77,6 +77,9 @@ if st.session_state["running_analysis"]:
         st.session_state["running_analysis"] = False
 
     for i in range(st.session_state["last_checked_agent_index"], len(st.session_state["execution_plan"])):
+        
+        #TODO: Refresh the page to show the current agent being executed and update the feedback from last agent
+        
         agent = st.session_state["execution_plan"][i]
         report, is_valid = agent.run(st.session_state["code"])
         st.session_state["chat_history"].append(f"**{agent.name} Report:**\n{report}")
