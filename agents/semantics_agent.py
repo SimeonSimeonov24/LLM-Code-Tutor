@@ -45,43 +45,11 @@ class SemanticsAgent:
         return not has_issues  # Returns True if code is fine, False otherwise.
 
     def run(self, code):
-        """Execute the semantics checking workflow with user interaction for fixing errors."""
+        """Execute the semantics checking workflow."""
         plan = self.create_plan(code)
-        print(f"Semantics Agent Plan: {plan}")
-        while True:
-            tool_analysis = self.analyze_semantics(code)
-            report = self.generate_report(plan, tool_analysis, code)
+        tool_analysis = self.analyze_semantics(code)
+        report = self.generate_report(plan, tool_analysis, code)
 
-            print("Semantics Analysis Report:")
-            print(report)
+        is_valid = self.check_report(report)
 
-            # Check if the semantics are valid
-            is_valid = self.check_report(report)
-            if is_valid:
-                print("No semantic issues found. Proceeding with the workflow.")
-                return code  # Return the last valid version of the code
-
-            # If semantic issues are found, ask the user to fix them
-            print("Semantic issues detected! Please provide the corrected code.")
-            # code = input("Enter the corrected code:\n")
-            code = """
-def calculate_sum(a, b): 
-    return a + b
-
-def find_maximum(numbers):
-    if not numbers:  # Handling empty list
-        return None
-    max_num = numbers[0]  # Start with the first element
-    for num in numbers:
-        if num > max_num:
-            max_num = num
-    return max_num
-
-result = calculate_sum(5, 10)   
-max_value = find_maximum([3,6,1,9])  
-print(result)
-print(max_value)
-            """
-            print(f"Corrected Code: {code}")
-            if not code.strip():
-                print("No input received. Keeping the previous code.")
+        return report, is_valid
