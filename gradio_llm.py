@@ -1,9 +1,89 @@
 from gradio_client import Client
 from langchain.prompts import PromptTemplate
 from langchain.agents import Tool
+from transformers import pipeline
+import autopep8
+import re
 
 # Gradio Client Setup
 client = Client("Krass/Qwen-Qwen2.5-Coder-32B-Instruct")
+
+style_model = pipeline("text-generation", model="bigcode/starcoderbase-1b")
+
+
+def query_huggingface_model(prompt):
+    """Fragt das Hugging Face Model für Code Style Verbesserung an."""
+    response = style_model(prompt)
+    return response[0]['generated_text']
+
+
+def style_analysis(code):
+    """Analysiert den Code-Stil und schlägt Verbesserungen vor."""
+    # AutoPEP8 für Grundlegende Style Fixes
+    formatted_code = autopep8.fix_code(code)
+
+    # Prüfen auf Verstöße gegen PEP8-Richtlinien mit regulären Ausdrücken
+    issues = []
+    if re.search(r"\t", code):
+        issues.append({"line": "N/A", "message": "Tabs detected, use spaces instead."})
+    if re.search(r"[^#]\s{2,}", code):
+        issues.append({"line": "N/A", "message": "Extra spaces detected."})
+
+    # Hugging Face Model für erweiterte Stil-Analyse
+    prompt = f"Analyze the following Python code for style and best practices:\n{code}"
+    model_feedback = query_huggingface_model(prompt)
+
+    return {"autopep8_fix": formatted_code, "issues": issues, "model_feedback": model_feedback}
+
+
+style_tool = Tool(
+    name="Coding Style Analysis Tool",
+    func=style_analysis,
+    description="Analyzes the code for PEP8 compliance, best practices, and formatting issues."
+)
+
+
+class CodingStyleAgent:
+    def __init__(self, tool):
+        self.tool = tool
+        self.name = "CodingStyleAgent"
+
+    def create_plan(self, code):
+        """Erstellt einen Plan zur Code-Style-Analyse."""
+        plan_prompt = f"""
+        You are a coding style expert. Create a simple step-by-step plan of max 5 steps to identify style and best practices issues in the provided code.
+        Ensure your plan covers aspects such as indentation, naming conventions, and overall readability.
+
+        Do not analyze or improve/revise the code yet.
+
+        Code:
+        {code}
+        """
+        return query_gradio_client(plan_prompt)
+
+    def analyze_style(self, code):
+        """Führt die Code-Style-Analyse durch."""
+        return self.tool.func(code)
+
+    def generate_report(self, plan, tool_feedback, code):
+        """Erstellt einen Bericht mit den gefundenen Code-Style-Fehlern."""
+        report_prompt = f"""
+        You are a coding style expert. Based on the following:
+        - Analysis Plan: {plan}
+        - Tool Feedback: {tool_feedback}
+        - Code: {code}
+
+        Generate a short report summarizing all coding style issues and suggesting improvements.
+        Do not improve/revise the code.
+        """
+        return query_gradio_client(report_prompt)
+
+    def run(self, code):
+        """Führt den Coding Style Agent aus."""
+        plan = self.create_plan(code)
+        print(f"Coding Style Agent Plan: {plan}")
+        tool_feedback = self.analyze_style(code)
+        return self.generate_report(plan, tool_feedback, code)
 
 
 # Helper function for querying Gradio Client
@@ -73,7 +153,7 @@ class SyntaxAgent:
         Ensure your plan covers all possible aspects of syntax analysis.
 
         Do not analyse or improve/revise the code.
-        
+
         Code:
         {code}
         """
@@ -90,7 +170,7 @@ class SyntaxAgent:
         - Analysis Plan: {plan}
         - Tool Feedback: {tool_feedback}
         - Code: {code}
-        
+
         Generate a short report summarizing all syntax issues within the code.
         Do not improve/revise the code.
         """
@@ -116,7 +196,7 @@ class SemanticsAgent:
         You are a semantics analysis expert. Create a simple step-by-step plan of max 5 simple steps to identify semantic issues in the provided code.
         Ensure your plan covers possible aspects of semantic analysis, including type checks, logic errors, and edge cases.
         Do not analyse or improve/revise the code yet. 
-        
+
         Code:
         {code}
         """
@@ -145,7 +225,6 @@ class SemanticsAgent:
         print(f"Semantics Agent Plan: {plan}")
         tool_feedback = self.analyze_semantics(code)
         return self.generate_report(plan, tool_feedback, code)
-
 
 
 # Orchestrator Agent
@@ -182,11 +261,13 @@ class OrchestratorAgent:
         summary = self.summarize_feedback(combined_feedback)
         return summary
 
+
 # Example Usage
 if __name__ == "__main__":
     # Initialize Agents
     syntax_agent = SyntaxAgent(syntax_tool)
     semantics_agent = SemanticsAgent(semantics_tool)
+    coding_style_agent = CodingStyleAgent(style_tool)
     orchestrator = OrchestratorAgent()
 
     # Example Code to Analyze
@@ -208,6 +289,6 @@ print(max_value)
     """
 
     # Execute Workflow
-    summary = orchestrator.execute(code_snippet, agents=[syntax_agent, semantics_agent])
+    summary = orchestrator.execute(code_snippet, agents=[syntax_agent, semantics_agent, coding_style_agent])
     print("Final Summary from Orchestrator:")
     print(summary)
