@@ -11,13 +11,7 @@ client_url = os.getenv("CLIENT_URL")
 # Initialize the client
 client = Client(client_url)
 
-# def query_gradio_client(prompt):
-#     result = client.predict(
-#         message=prompt,
-#         api_name="/chat"
-#     )
-#     return result
-
+# Helper function for querying Gradio Client
 def query_gradio_client(prompt):
     result = client.predict(
             query=prompt,
