@@ -9,10 +9,11 @@ class CodeStyleAgent:
     def create_plan(self, code):
         """Create a plan for analyzing the code's style."""
         plan_prompt = f"""
-        You are a coding style expert. Create a simple step-by-step plan of max 5 steps to identify style and best practices issues in the provided code.
+        You are a coding style expert. Create a simple step-by-step plan of max 5 steps to identify style issues in the provided code.
         Ensure your plan covers aspects such as indentation, naming conventions, and overall readability.
         Do not analyze or improve/revise the code yet.
-        Ignore comments and focus only on structural and formatting issues found by autopep8.
+        Ignore comments and focus only on issues found by autopep8.
+        This is your Autopep8 tool: {self.tool.description}
 
         Code:
         {code}
@@ -32,7 +33,7 @@ class CodeStyleAgent:
         - Code: {code}
 
         Generate a short report summarizing all coding style issues and suggesting improvements.
-        Focus only on issues detected by autopep8 and ignore any comments in the code.
+        Focus only on issues detected by black and ignore any comments in the code.
         Do not improve/revise the code.
         """
         return query_gradio_client(report_prompt)
@@ -41,7 +42,7 @@ class CodeStyleAgent:
         """Check if there are coding style issues based on the report."""
         style_validation_prompt = f"""
         You are a coding style expert. Based on the following coding style report, determine if the code has any style issues.
-        Ignore comments and focus only on autopep8-detected issues.
+        Ignore comments and focus only on black-detected issues.
         Report: {report}
         Answer only 'yes' if there are issues or 'no' if the code is fine.
         """
@@ -53,7 +54,5 @@ class CodeStyleAgent:
         plan = self.create_plan(code)
         tool_analysis = self.analyze_style(code)
         report = self.generate_report(plan, tool_analysis, code)
-
         is_valid = self.check_report(report)
-
         return report, is_valid

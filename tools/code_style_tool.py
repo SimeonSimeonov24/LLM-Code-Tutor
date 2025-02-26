@@ -1,44 +1,30 @@
 from langchain.agents import Tool
-import autopep8
-import re
-from gradio_llm import query_gradio_client
+import black
+import difflib
 
-# Define Coding Style Analysis Tool
+# Define Coding Style Analysis Tool using Black
 def style_analysis(code):
-    """Analyze the code style and suggest improvements."""
-    # AutoPEP8 for basic style fixes
-    formatted_code = autopep8.fix_code(code)
+    """Analyze the code style using Black."""
+    try:
+        # Use Black to format the code
+        formatted_code = black.format_str(code, mode=black.Mode())
+    except black.NothingChanged:
+        formatted_code = code  # If no changes are made, return the original code
 
-    # Check for PEP8 violations using regex
+    # Compare the original code with the formatted code to identify issues
+    diff = difflib.unified_diff(code.splitlines(), formatted_code.splitlines())
     issues = []
-    if re.search(r"\t", code):
-        issues.append({"line": "N/A", "message": "Tabs detected, use spaces instead."})
-    if re.search(r"[^#]\s{2,}", code):
-        issues.append({"line": "N/A", "message": "Extra spaces detected."})
-    if re.search(r"[^\n]\n{2,}", code):
-        issues.append({"line": "N/A", "message": "Multiple consecutive blank lines detected."})
-    if re.search(r"[^#] {4,}", code):
-        issues.append({"line": "N/A", "message": "Excessive spaces detected."})
-    if re.search(r";", code):
-        issues.append({"line": "N/A", "message": "Unnecessary semicolon detected."})
-    if re.search(r"[^\S\n]{2,}$", code, re.MULTILINE):
-        issues.append({"line": "N/A", "message": "Trailing whitespace detected."})
-    if re.search(r"\s+$", code, re.MULTILINE):
-        issues.append({"line": "N/A", "message": "Trailing spaces at the end of a line detected."})
-    if re.search(r"^\s*\n", code, re.MULTILINE):
-        issues.append({"line": "N/A", "message": "Unnecessary leading blank lines detected."})
 
-    # Hugging Face Model for advanced style analysis
-    prompt = f"""
-    Analyze the following Python code for style and best practices:
-    {code}
-    """
-    model_feedback = query_gradio_client(prompt)
+    # Identify lines that need changes
+    for line in diff:
+        if line.startswith('- ') or line.startswith('+ '):
+            issues.append({"line": line.strip(), "message": "Code needs formatting."})
+    return {"black_analysis": formatted_code, "issues": issues}
 
-    return {"autopep8_fix": formatted_code, "issues": issues, "model_feedback": model_feedback}
-
+# Create the Tool using Black formatting for analysis
 code_style_tool = Tool(
-    name="Coding Style Analysis Tool",
+    name="Coding Style Analysis Tool using Black",
     func=style_analysis,
-    description="Analyzes the code for PEP8 compliance, best practices, and formatting issues."
+    description="""Analyzes the code for formatting issues using Black.
+    Compares the original code with the formatted code and identifies what needs to be changed."""
 )
