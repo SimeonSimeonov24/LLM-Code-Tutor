@@ -15,6 +15,18 @@ def style_analysis(code):
         issues.append({"line": "N/A", "message": "Tabs detected, use spaces instead."})
     if re.search(r"[^#]\s{2,}", code):
         issues.append({"line": "N/A", "message": "Extra spaces detected."})
+    if re.search(r"[^\n]\n{2,}", code):
+        issues.append({"line": "N/A", "message": "Multiple consecutive blank lines detected."})
+    if re.search(r"[^#] {4,}", code):
+        issues.append({"line": "N/A", "message": "Excessive spaces detected."})
+    if re.search(r";", code):
+        issues.append({"line": "N/A", "message": "Unnecessary semicolon detected."})
+    if re.search(r"[^\S\n]{2,}$", code, re.MULTILINE):
+        issues.append({"line": "N/A", "message": "Trailing whitespace detected."})
+    if re.search(r"\s+$", code, re.MULTILINE):
+        issues.append({"line": "N/A", "message": "Trailing spaces at the end of a line detected."})
+    if re.search(r"^\s*\n", code, re.MULTILINE):
+        issues.append({"line": "N/A", "message": "Unnecessary leading blank lines detected."})
 
     # Hugging Face Model for advanced style analysis
     prompt = f"""
