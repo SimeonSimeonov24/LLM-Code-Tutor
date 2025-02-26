@@ -79,27 +79,40 @@ if st.session_state["running_analysis"]:
         st.error("Execution plan is empty! Please generate or adjust the plan.")
         st.session_state["running_analysis"] = False
 
+    # Loop through all agents
     for i in range(st.session_state["last_checked_agent_index"], len(st.session_state["execution_plan"])):
-        
-        #TODO: Refresh the page to show the current agent being executed and update the feedback from last agent
-        
         agent = st.session_state["execution_plan"][i]
+        st.session_state["chat_history"].append(f"**Running agent: {agent.name}**")
+        
+        # Run the agent and get the report
         report, is_valid = agent.run(st.session_state["code"])
         st.session_state["chat_history"].append(f"**{agent.name} Report:**\n{report}")
 
         # If issues are detected, stop and ask for user input
         if not is_valid:
             st.session_state["chat_history"].append("⚠️ Issues detected! Please correct the code below and submit it.")
-            st.session_state["last_checked_agent_index"] = i  # Save progress at current agent
             st.session_state["code_needs_fixing"] = True  # Mark that user needs to fix code
-            break  # Stop and wait for user input
+            st.session_state["last_checked_agent_index"] = i  # Save the progress at the current agent
+            st.session_state["running_analysis"] = False  # Stop analysis
+            break  # Stop and wait for user input to continue
 
-    # If all agents validate the code, analysis is complete
+        # If agent passes, proceed to the next agent
+        else:
+            # Update to the next agent
+            st.session_state["last_checked_agent_index"] = i + 1
+            if st.session_state["last_checked_agent_index"] < len(st.session_state["execution_plan"]):
+                next_agent = st.session_state["execution_plan"][st.session_state["last_checked_agent_index"]]
+                st.session_state["chat_history"].append(f"Next agent: {next_agent.name} will run next.")
+
+            # Allow user to proceed with next analysis
+            if st.session_state["last_checked_agent_index"] < len(st.session_state["execution_plan"]):
+                st.button("Run Next Analysis")  # Give option to continue to next agent
+
     else:
+        # If all agents validate the code, analysis is complete
         st.session_state["chat_history"].append("🎉 All checks passed! Your code is valid!")
         st.session_state["last_checked_agent_index"] = 0  # Reset for next run
-
-    st.session_state["running_analysis"] = False  # Stop execution after reports
+        st.session_state["running_analysis"] = False  # Stop execution after reports
 
 # Display chatbot conversation
 for message in st.session_state["chat_history"]:
