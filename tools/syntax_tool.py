@@ -1,8 +1,8 @@
 from langchain.agents import Tool
+import parso
 
 def syntax_analysis(code):
     """Analyze the code for syntax errors using Parso."""
-    import parso
     try:
         # Load the grammar for the current Python version
         grammar = parso.load_grammar()

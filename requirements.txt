@@ -1,3 +1,9 @@
 gradio_client
 langchain
 python-dotenv
+streamlit
+parso
+ast
+black
+difflib
+radon
