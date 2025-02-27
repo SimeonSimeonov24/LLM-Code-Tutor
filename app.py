@@ -14,7 +14,7 @@ syntax_agent = SyntaxAgent(syntax_tool)
 semantics_agent = SemanticsAgent(semantics_tool)
 code_style_agent = CodeStyleAgent(code_style_tool)
 code_structure_agent = CodeStructureAgent(code_structure_tool)
-orchestrator = OrchestratorAgent(agents=[code_structure_agent])
+orchestrator = OrchestratorAgent(agents=[syntax_agent, semantics_agent, code_style_agent, code_structure_agent])
 
 st.title("💬 LLM Code Tutor Chatbot")
 st.markdown("Analyze and improve your code with AI-driven syntax and semantic checks.")

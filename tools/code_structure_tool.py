@@ -42,7 +42,7 @@ def analyze_code_structure(code: str):
     # Maintainability Index (MI) for code modularity
     maintainability_index = rm.mi_visit(code, True)  # True enables additional insights
     results["maintainability_index"] = maintainability_index
-    if maintainability_index < 50:  # Maintainability Index ranges from 0-100 (low is bad)
+    if maintainability_index < 50:  # Maintainability Index ranges from 0-100 (low is bad) - under 65 is considered not easy to maintain
         results["issues"].append(f"Low maintainability index ({maintainability_index:.2f}). Consider refactoring.")
 
     # Analyze functions and classes
