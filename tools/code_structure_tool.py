@@ -6,7 +6,6 @@ from radon.complexity import cc_visit
 from langchain.agents import Tool
 
 def analyze_code_structure(code: str):
-    #TODO: Improve the analysis by lowering standards and not suggesting improvements to code that is already decent.
     """
     Analyzes the modularity and structure of the given Python code.
     Checks:
