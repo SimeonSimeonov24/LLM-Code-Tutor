@@ -6,3 +6,6 @@ parso
 black
 radon
 bandit
+pyflakes
+pylint
+vulture
