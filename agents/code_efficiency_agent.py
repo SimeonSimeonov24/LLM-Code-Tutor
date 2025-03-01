@@ -27,6 +27,7 @@ class CodeEfficiencyAgent:
         return self.tool.func(code)
 
     def generate_report(self, plan, tool_feedback, code):
+        # TODO: Improvements to Agent, ignoring minor issues, detecting issues properly
         """Generate a final report based on the plan, tool feedback, and code."""
         report_prompt = f"""
         You are a software optimization expert. Based on the following:
@@ -36,7 +37,8 @@ class CodeEfficiencyAgent:
 
         Generate a short report summarizing all efficiency issues and suggesting improvements.
         Focus only on issues detected by the tool and ignore any comments in the code.
-        If the issues are only minor, then do not say that those issues were detected or suggest improvements.
+        Ignore issues that are related to code style, documentation, whitespaces, newlines or similar. This is out of your scope.
+        If there are minor issues such as O(n) or similar, make sure you suggest the improvement but also specify that it is not necessary,
         Do not improve/revise the code.
         """
         return query_gradio_client(report_prompt)
@@ -46,6 +48,7 @@ class CodeEfficiencyAgent:
         efficiency_validation_prompt = f"""
         You are a software optimization expert. Based on the following efficiency report, determine if the code has any issues.
         Ignore comments and focus only on tool-detected issues.
+        If there are minor issues, it is okay to answer with yes.
         Report: {report}
         Answer only 'yes' if there are issues or 'no' if the code is fine.
         """

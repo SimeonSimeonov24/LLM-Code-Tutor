@@ -1,8 +1,11 @@
 import ast
+import io
 import tempfile
-import pyflakes.api
+import os
+import sys
+import subprocess
 import pyflakes.reporter
-from pylint.lint import Run
+import pyflakes.api
 from vulture import Vulture
 from langchain.agents import Tool
 
@@ -53,41 +56,69 @@ def analyze_pyflakes(code):
     """
     issues = []
     try:
-        with tempfile.NamedTemporaryFile(delete=True, suffix=".py") as temp_file:
-            temp_file.write(code.encode())
-            temp_file.flush()
-            reporter = pyflakes.reporter.Reporter(errorStream=temp_file.file, warningStream=temp_file.file)
-            pyflakes.api.checkPath(temp_file.name)
-            temp_file.seek(0)
-            output = temp_file.read().decode().strip()
-            if output:
-                issues = output.split("\n")
+        # Create a temporary file
+        fd, temp_path = tempfile.mkstemp(suffix=".py")
+        with os.fdopen(fd, 'w') as temp_file:
+            temp_file.write(code)
+
+        # Redirect stderr to capture Pyflakes output
+        stderr_capture = io.StringIO()
+        sys.stderr = stderr_capture
+
+        # Run Pyflakes on the temp file
+        pyflakes.api.checkPath(temp_path)
+
+        # Restore stderr and capture the output
+        sys.stderr = sys.__stderr__
+        output = stderr_capture.getvalue().strip()
+
+        if output:
+            issues = output.split("\n")
     except Exception as e:
         issues.append(f"Error running Pyflakes: {e}")
+    finally:
+        os.remove(temp_path)  # Cleanup the temporary file
 
     return issues
 
-
 def analyze_pylint(code):
     """
-    Runs Pylint to analyze code efficiency, scoring it based on best practices.
+    Runs Pylint to analyze code efficiency and captures detected issues.
 
     Returns:
         dict: Pylint score and detected issues.
     """
     results = {"score": None, "issues": []}
     try:
-        with tempfile.NamedTemporaryFile(delete=True, suffix=".py") as temp_file:
-            temp_file.write(code.encode())
-            temp_file.flush()
-            pylint_output = Run([temp_file.name], do_exit=False)
-            results["score"] = pylint_output.linter.stats.global_note
-            results["issues"] = pylint_output.linter.reporter.messages
+        # Create a temporary file
+        fd, temp_path = tempfile.mkstemp(suffix=".py")
+        with os.fdopen(fd, 'w') as temp_file:
+            temp_file.write(code)
+
+        # Run Pylint as a subprocess
+        process = subprocess.run(["pylint", temp_path, "--output-format=json"],
+                                 capture_output=True, text=True, check=False)
+
+        # Parse Pylint output (if available)
+        if process.stdout:
+            import json
+            try:
+                pylint_output = json.loads(process.stdout)
+                results["issues"] = [issue["message"] for issue in pylint_output]
+                results["score"] = None  # Pylint scores are in separate output formats
+            except json.JSONDecodeError:
+                results["issues"].append("Error decoding Pylint JSON output.")
+        
+        if process.stderr:
+            results["issues"].append(f"Pylint error: {process.stderr.strip()}")
+
     except Exception as e:
         results["issues"].append(f"Error running Pylint: {e}")
 
-    return results
+    finally:
+        os.remove(temp_path)  # Cleanup the temporary file
 
+    return results
 
 def analyze_vulture(code):
     """
