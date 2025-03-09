@@ -4,20 +4,28 @@ from agents.syntax_agent import SyntaxAgent
 from agents.semantics_agent import SemanticsAgent
 from agents.code_style_agent import CodeStyleAgent
 from agents.code_structure_agent import CodeStructureAgent
+from agents.security_analysis_agent import SecurityAnalysisAgent
+from agents.code_efficiency_agent import CodeEfficiencyAgent
+from agents.documentation_agent import DocumentationAgent
+from agents.error_handling_agent import ErrorHandlingAgent
 from tools.syntax_tool import syntax_tool
 from tools.semantics_tool import semantics_tool
 from tools.code_style_tool import code_style_tool
 from tools.code_structure_tool import code_structure_tool
-from agents.error_handling_agent import ErrorHandlingAgent
+from tools.security_analysis_tool import security_analysis_tool
+from tools.code_efficiency_tool import code_efficiency_tool
+from tools.documentation_tool import documentation_tool
 from tools.error_handling_tool import error_handling_tool
 
 # Initialize Agents
 syntax_agent = SyntaxAgent(syntax_tool)
 semantics_agent = SemanticsAgent(semantics_tool)
 code_style_agent = CodeStyleAgent(code_style_tool)
+documentation_agent = DocumentationAgent(documentation_tool)
 code_structure_agent = CodeStructureAgent(code_structure_tool)
-error_handling_agent = ErrorHandlingAgent(error_handling_tool)
-orchestrator = OrchestratorAgent(agents=[syntax_agent, semantics_agent, code_style_agent, code_structure_agent, error_handling_agent])
+security_analysis_agent = SecurityAnalysisAgent(security_analysis_tool)
+code_efficiency_agent = CodeEfficiencyAgent(code_efficiency_tool)
+orchestrator = OrchestratorAgent(agents=[syntax_agent, semantics_agent, code_style_agent, code_structure_agent, security_analysis_agent, code_efficiency_agent, documentation_agent, error_handling_agent])
 
 st.title("💬 LLM Code Tutor Chatbot")
 st.markdown("Analyze and improve your code with AI-driven syntax and semantic checks.")

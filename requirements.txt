@@ -3,7 +3,9 @@ langchain
 python-dotenv
 streamlit
 parso
-ast
 black
-difflib
 radon
+bandit
+pyflakes
+pylint
+vulture
