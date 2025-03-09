@@ -1,3 +1,11 @@
 gradio_client
 langchain
 python-dotenv
+streamlit
+parso
+black
+radon
+bandit
+pyflakes
+pylint
+vulture
