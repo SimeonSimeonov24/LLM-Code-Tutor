@@ -27,33 +27,40 @@ class CodeEfficiencyAgent:
         return self.tool.func(code)
 
     def generate_report(self, plan, tool_feedback, code):
-        # TODO: Improvements to Agent, ignoring minor issues, detecting issues properly
-        """Generate a final report based on the plan, tool feedback, and code."""
+        """Generate a final report summarizing all efficiency issues and suggesting improvements."""
         report_prompt = f"""
         You are a software optimization expert. Based on the following:
         - Analysis Plan: {plan}
         - Tool Feedback: {tool_feedback}
         - Code: {code}
 
-        Generate a short report summarizing all efficiency issues and suggesting improvements.
-        Focus only on issues detected by the tool and ignore any comments in the code.
-        Ignore issues that are related to code style, documentation, whitespaces, newlines or similar. This is out of your scope.
-        If there are minor issues such as O(n) or similar, make sure you suggest the improvement but also specify that it is not necessary,
-        Do not improve/revise the code.
+        Generate a short and precise report summarizing efficiency issues and suggest improvements.
+        - **Critical Issues (must fix):** Only include inefficiencies that significantly impact performance.
+        - **Minor Issues (Optional):** Only include very minor inefficiencies that do not impact performance.
+        - If an inefficiency is **only relevant for massive datasets**, mention it but **do not flag it as an issue**.
+
+        Format:
+        - **Critical Issues:** [List significant performance-impacting problems]
+        - **Minor Issues (Optional):** [List only if truly minor and not affecting performance]
         """
         return query_gradio_client(report_prompt)
 
     def check_report(self, report):
-        """Check if there are efficiency issues based on the report."""
+        """Ensure code is not marked valid if critical issues exist and prevent over-reporting minor issues."""
         efficiency_validation_prompt = f"""
-        You are a software optimization expert. Based on the following efficiency report, determine if the code has any issues.
-        Ignore comments and focus only on tool-detected issues.
-        If there are minor issues, it is okay to answer with yes.
-        Report: {report}
-        Answer only 'yes' if there are issues or 'no' if the code is fine.
+        You are a software optimization expert. Based on the following efficiency report, determine if the code is efficient.
+        
+        Make sure you really focus on checking for critical issues first and answer "No" if there are any.
+        If there are no critical issues then answer "Yes"
+
+        Report:
+        {report}
         """
-        has_issues = query_gradio_client(efficiency_validation_prompt).strip().lower() == "yes"
-        return not has_issues  # Returns True if code is efficient, False otherwise.
+        response = query_gradio_client(efficiency_validation_prompt).strip().lower()
+
+        if response == "no":
+            return False  # Code is inefficient due to critical issues.
+        return True  # Code is valid if no critical issues exist.
 
     def run(self, code):
         """Execute the code efficiency checking workflow."""

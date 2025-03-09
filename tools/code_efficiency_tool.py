@@ -89,34 +89,47 @@ def analyze_pylint(code):
         dict: Pylint score and detected issues.
     """
     results = {"score": None, "issues": []}
+    temp_path = None 
+
     try:
+        # Check if Pylint is installed
+        process_check = subprocess.run(["pylint", "--version"], capture_output=True, text=True, check=False)
+        if process_check.returncode != 0:
+            results["issues"].append("Pylint is not installed or not found in the system PATH.")
+            return results
+
         # Create a temporary file
         fd, temp_path = tempfile.mkstemp(suffix=".py")
         with os.fdopen(fd, 'w') as temp_file:
             temp_file.write(code)
 
         # Run Pylint as a subprocess
-        process = subprocess.run(["pylint", temp_path, "--output-format=json"],
-                                 capture_output=True, text=True, check=False)
+        process = subprocess.run(
+            ["pylint", temp_path, "--output-format=json"],
+            capture_output=True, text=True, check=False
+        )
 
         # Parse Pylint output (if available)
-        if process.stdout:
+        if process.stdout.strip():
             import json
             try:
                 pylint_output = json.loads(process.stdout)
-                results["issues"] = [issue["message"] for issue in pylint_output]
+                results["issues"] = [issue["message"] for issue in pylint_output if isinstance(issue, dict)]
                 results["score"] = None  # Pylint scores are in separate output formats
             except json.JSONDecodeError:
                 results["issues"].append("Error decoding Pylint JSON output.")
-        
-        if process.stderr:
+
+        if process.stderr.strip():
             results["issues"].append(f"Pylint error: {process.stderr.strip()}")
 
+    except FileNotFoundError:
+        results["issues"].append("Pylint could not run due to a missing file or incorrect installation.")
     except Exception as e:
         results["issues"].append(f"Error running Pylint: {e}")
 
     finally:
-        os.remove(temp_path)  # Cleanup the temporary file
+        if temp_path and os.path.exists(temp_path):  # Ensure temp_path is not None before referencing it
+            os.remove(temp_path)  # Cleanup the temporary file
 
     return results
 
