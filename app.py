@@ -25,6 +25,7 @@ documentation_agent = DocumentationAgent(documentation_tool)
 code_structure_agent = CodeStructureAgent(code_structure_tool)
 security_analysis_agent = SecurityAnalysisAgent(security_analysis_tool)
 code_efficiency_agent = CodeEfficiencyAgent(code_efficiency_tool)
+error_handling_agent = ErrorHandlingAgent(error_handling_tool)
 orchestrator = OrchestratorAgent(agents=[syntax_agent, semantics_agent, code_style_agent, code_structure_agent, security_analysis_agent, code_efficiency_agent, documentation_agent, error_handling_agent])
 
 st.title("💬 LLM Code Tutor Chatbot")
