@@ -155,3 +155,9 @@ if st.session_state["code_needs_fixing"]:
         st.session_state["code_needs_fixing"] = False
         st.session_state["waiting_for_next"] = False
         st.rerun()
+        
+if st.button("🔄 Restart Workflow"):
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]  # Clears all stored session state variables
+    st.rerun()
+
