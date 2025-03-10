@@ -12,10 +12,20 @@ class OrchestratorAgent:
         {', '.join(agent.name for agent in self.agents)}.
         Based on the code below, create an analysis plan. Indicate the order in which agents should run with a very short explanation of what the agents do.
         Keep it very simple, only a few lines. Make sure to use Syntax and Semantic Agents first, since they are important.
+        Do not add two explanations of the agents, only within the plan.
 
         Code:
         {code}
+        
+        Example:
+        ***
+        ### Analysis Plan
+
+        1. **SyntaxAgent**: Checks for syntax errors and ensures the code is syntactically correct.
+        2. **SemanticsAgent**: Evaluates the logical structure and meaning of the code to ensure it behaves as intended.
+        ***
         """
+        
         response = query_gradio_client(plan_prompt)
         self.execution_plan = self.parse_plan(response)
         if not self.execution_plan:
