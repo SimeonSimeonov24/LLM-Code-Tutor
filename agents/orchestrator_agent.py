@@ -101,13 +101,10 @@ class OrchestratorAgent:
         return query_gradio_client(decision_prompt).strip().lower()
 
     def execute(self, code):
-        #feedback_list = []
         code_list = []
         for agent in self.execution_plan:
             code = agent.run(code)
             code_list.append(f"{agent.name} Improved Code:\n{code}")
-            #feedback = agent.run(code)
-            #feedback_list.append(f"{agent.name} Feedback:\n{feedback}")
         return "\n\n".join(code_list)
 
     def run_workflow(self, code):
