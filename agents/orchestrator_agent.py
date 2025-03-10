@@ -11,7 +11,7 @@ class OrchestratorAgent:
         You are an assistant coordinating a code analysis process. The available agents are:
         {', '.join(agent.name for agent in self.agents)}.
         Based on the code below, create an analysis plan. Indicate the order in which agents should run with a very short explanation of what the agents do.
-        Keep it very simple, only a few lines.
+        Keep it very simple, only a few lines. Make sure to use Syntax and Semantic Agents first, since they are important.
 
         Code:
         {code}
