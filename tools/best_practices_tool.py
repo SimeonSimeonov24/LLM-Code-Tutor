@@ -16,12 +16,6 @@ def best_practices_analysis(code):
                 if len(node.id) < 2:
                     issues.append(f"Line {node.lineno}: Variable '{node.id}' has a too-short name. Use a meaningful name.")
 
-        # Check for magic numbers (excluding 0, 1, -1)
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
-                if node.value not in {0, 1, -1}:
-                    issues.append(f"Line {getattr(node, 'lineno', 'unknown')}: Magic number {node.value} found. Use a constant.")
-
         return "No best practices violations found." if not issues else "\n".join(issues)
     except Exception as e:
         return f"Error during analysis: {str(e)}"

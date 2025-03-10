@@ -8,19 +8,48 @@ class BestPracticesAgent:
     def analyze_best_practices(self, code):
         """Runs the best practices analysis tool and gets all issues."""
         return self.tool.func(code)
+    
+    def analyze_magic_numbers(self, code):
+        """Sends a prompt to the LLM to check for magic numbers while avoiding false positives from defined constants."""
 
-    def generate_report(self, tool_feedback, code):
+        prompt = f"""
+        You are an expert in software engineering best practices. Your task is to analyze Python code **only for magic numbers** and flag **only numbers that are directly used in expressions without being defined as constants first**.
+
+        ### **Rules:**
+        - **IGNORE** numbers **0, 1, -1**, as they are commonly accepted as non-magic numbers.
+        - **DO NOT** flag a number if it has already been assigned to a **constant variable** before usage.
+        - **ONLY flag a number** if it is directly used in an expression **without being assigned to a constant** beforehand.
+        - If a number appears in a `range()` function, **DO NOT flag it** if it is constructed using a pre-defined constant.
+        - Provide a **structured list** of flagged numbers, including:
+            - **Line number**
+            - **The problematic number**
+            - **A brief reason why it is a magic number**
+        - If no violations exist, return **only**: `"No magic numbers found."`
+
+        ### Now analyze the following code:
+        {code}
+
+        **Provide your analysis below:**
+        """
+        
+        return query_gradio_client(prompt).strip()
+
+    def generate_report(self, tool_feedback, magic_numbers_analysis, code):
         """Generates a clear and actionable best practices report."""
         report_prompt = f"""
         You are an expert in software engineering best practices. 
         Based on the tool's feedback and the given code, generate a FINAL and COMPLETE report.
 
-        - List **all** best practice violations in the code.
+        - List **all** best practice violations in the code, **excluding** documentation, error handling, code structure, or efficiency-related issues.
         - Ensure that the report is actionable so that fixing the listed issues will make the code fully compliant.
-        - If there are **no issues**, return ONLY: "🎉 All checks passed! Your code follows best practices!"
-        - If there ARE issues, **DO NOT** say all checks passed. Instead, provide a structured, detailed list of problems.
+        - Do **not** flag issues where a constant is already properly defined and used consistently.
+        - **Do NOT flag an issue if it was already addressed using a constant.**
+        - **Do NOT suggest unnecessary constants for 0, 1, -1, or pre-defined variables.**
+        - Provide a **structured, detailed list** of problems, ensuring that each reported issue is genuinely a violation.
+        - DO NOT CORRECT THE CODE!
 
         Tool Feedback: {tool_feedback}
+        Magic Numbers Analysis: {magic_numbers_analysis}
         Code: {code}
         """
 
@@ -39,7 +68,8 @@ class BestPracticesAgent:
     def run(self, code):
         """Runs the best practices checking workflow."""
         tool_analysis = self.analyze_best_practices(code)
-        report = self.generate_report(tool_analysis, code)
+        magic_numbers_analysis = self.analyze_magic_numbers(code)
+        report = self.generate_report(tool_analysis, magic_numbers_analysis, code)
         is_valid = self.check_analysis(report)
 
         return report, is_valid

@@ -29,7 +29,7 @@ security_analysis_agent = SecurityAnalysisAgent(security_analysis_tool)
 code_efficiency_agent = CodeEfficiencyAgent(code_efficiency_tool)
 error_handling_agent = ErrorHandlingAgent(error_handling_tool)
 best_practices_agent = BestPracticesAgent(best_practices_tool)
-orchestrator = OrchestratorAgent(agents=[syntax_agent, semantics_agent, code_style_agent, code_structure_agent, security_analysis_agent, code_efficiency_agent, documentation_agent, error_handling_agent, best_practices_agent])
+orchestrator = OrchestratorAgent(agents=[best_practices_agent])
 
 st.title("💬 LLM Code Tutor Chatbot")
 st.markdown("Analyze and improve your code with AI-driven syntax and semantic checks.")
