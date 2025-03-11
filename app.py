@@ -59,15 +59,18 @@ if st.button("🛠️ Generate Execution Plan"):
     if not code_snippet.strip():
         st.warning("Please enter some code before analyzing.")
     else:
-        st.session_state["code"] = code_snippet
-        plan = orchestrator.create_plan_with_llm(code_snippet)
-        st.session_state["plan"] = plan
-        st.session_state["execution_plan"] = orchestrator.parse_plan(plan)
-        st.session_state["last_checked_agent_index"] = 0
-        st.session_state["code_needs_fixing"] = False
-        st.session_state["waiting_for_next"] = False
-        st.session_state["chat_history"] = []
-        st.success("Execution plan created! You can adjust it before running analysis.")
+        try:
+            st.session_state["code"] = code_snippet
+            plan = orchestrator.create_plan_with_llm(code_snippet)
+            st.session_state["plan"] = plan
+            st.session_state["execution_plan"] = orchestrator.parse_plan(plan)
+            st.session_state["last_checked_agent_index"] = 0
+            st.session_state["code_needs_fixing"] = False
+            st.session_state["waiting_for_next"] = False
+            st.session_state["chat_history"] = []
+            st.success("Execution plan created! You can adjust it before running analysis.")
+        except Exception as e:
+            st.error(f"Error generating execution plan: {e}")
 
 # Show execution plan and allow user adjustments
 if st.session_state["plan"]:
@@ -75,22 +78,28 @@ if st.session_state["plan"]:
     st.markdown(st.session_state["plan"])
     user_feedback = st.text_area("✏️ You can provide adjustments to the plan here: ")
     if st.button("✅ Update Plan"):
-        adjusted_plan = orchestrator.adjust_plan_with_llm(st.session_state["plan"], user_feedback)
-        if adjusted_plan.strip():
-            st.session_state["plan"] = adjusted_plan
-            st.session_state["execution_plan"] = orchestrator.parse_plan(adjusted_plan)
-            st.session_state["last_checked_agent_index"] = 0
-            st.success("Execution plan updated! The new plan is shown above.")
-            st.rerun()
+        try:
+            adjusted_plan = orchestrator.adjust_plan_with_llm(st.session_state["plan"], user_feedback)
+            if adjusted_plan.strip():
+                st.session_state["plan"] = adjusted_plan
+                st.session_state["execution_plan"] = orchestrator.parse_plan(adjusted_plan)
+                st.session_state["last_checked_agent_index"] = 0
+                st.success("Execution plan updated! The new plan is shown above.")
+                st.rerun()
+        except Exception as e:
+            st.error(f"Error updating execution plan: {e}")
 
 # Run analysis
 if st.session_state["plan"] and st.button("🚀 Run Analysis"):
-    st.session_state["running_analysis"] = True
-    st.session_state["code_needs_fixing"] = False
-    st.session_state["last_checked_agent_index"] = 0
-    st.session_state["waiting_for_next"] = False
-    st.markdown(f"## 🚀 Running Analysis: {st.session_state['execution_plan'][st.session_state['last_checked_agent_index']].name}")
-    st.rerun()
+    try:
+        st.session_state["running_analysis"] = True
+        st.session_state["code_needs_fixing"] = False
+        st.session_state["last_checked_agent_index"] = 0
+        st.session_state["waiting_for_next"] = False
+        st.markdown(f"## 🚀 Running Analysis: {st.session_state['execution_plan'][st.session_state['last_checked_agent_index']].name}")
+        st.rerun()
+    except Exception as e:
+        st.error(f"Error starting analysis: {e}")
 
 # Analysis Loop
 if st.session_state["running_analysis"] and not st.session_state["waiting_for_next"]:
@@ -107,31 +116,34 @@ if st.session_state["running_analysis"] and not st.session_state["waiting_for_ne
         # Show running agent
         st.session_state["chat_history"].append(f"## 🚀 Running Analysis: {agent.name}")
 
-        # Run the agent and get the report
-        report, is_valid = agent.run(st.session_state["code"])
+        try:
+            # Run the agent and get the report
+            report, is_valid = agent.run(st.session_state["code"])
 
-        # Display the agent's report
-        st.session_state["chat_history"].append(report)
+            # Display the agent's report
+            st.session_state["chat_history"].append(report)
 
-        if not is_valid:
-            # If issues are found, stop and ask the user to correct them
-            st.session_state["chat_history"].append("⚠️ **Issues detected! Please correct the code below and submit it.**")
-            st.session_state["code_needs_fixing"] = True
-            st.session_state["running_analysis"] = False
+            if not is_valid:
+                # If issues are found, stop and ask the user to correct them
+                st.session_state["chat_history"].append("⚠️ **Issues detected! Please correct the code below and submit it.**")
+                st.session_state["code_needs_fixing"] = True
+                st.session_state["running_analysis"] = False
 
-        else:
-            # If code passes, confirm success
-            st.session_state["chat_history"].append(f"✅ **{agent.name} has finished. No issues detected.**")
-            st.session_state["last_checked_agent_index"] += 1
+            else:
+                # If code passes, confirm success
+                st.session_state["chat_history"].append(f"✅ **{agent.name} has finished. No issues detected.**")
+                st.session_state["last_checked_agent_index"] += 1
 
-            # Check if another agent exists
-            if st.session_state["last_checked_agent_index"] < len(st.session_state["execution_plan"]):
-                next_agent = st.session_state["execution_plan"][st.session_state["last_checked_agent_index"]]
-                st.session_state["chat_history"].append(f"### ⏭️ Next Agent: {next_agent.name}")
+                # Check if another agent exists
+                if st.session_state["last_checked_agent_index"] < len(st.session_state["execution_plan"]):
+                    next_agent = st.session_state["execution_plan"][st.session_state["last_checked_agent_index"]]
+                    st.session_state["chat_history"].append(f"### ⏭️ Next Agent: {next_agent.name}")
 
-                # Pause and wait for user confirmation
-                st.session_state["waiting_for_next"] = True
-                st.rerun()
+                    # Pause and wait for user confirmation
+                    st.session_state["waiting_for_next"] = True
+                    st.rerun()
+        except Exception as e:
+            st.error(f"Error running agent {agent.name}: {e}")
 
 # Display chat history
 for message in st.session_state["chat_history"]:
@@ -141,23 +153,32 @@ for message in st.session_state["chat_history"]:
 if st.session_state["waiting_for_next"]:
     next_agent = st.session_state["execution_plan"][st.session_state["last_checked_agent_index"]]
     if st.button(f"▶️ Run {next_agent.name} Analysis"):
-        st.markdown(f"## 🚀 Running Analysis: {st.session_state['execution_plan'][st.session_state['last_checked_agent_index']].name}")
-        st.session_state["waiting_for_next"] = False
-        st.rerun()
+        try:
+            st.markdown(f"## 🚀 Running Analysis: {st.session_state['execution_plan'][st.session_state['last_checked_agent_index']].name}")
+            st.session_state["waiting_for_next"] = False
+            st.rerun()
+        except Exception as e:
+            st.error(f"Error running next agent {next_agent.name}: {e}")
 
 # If the last agent detected issues, allow user to fix code
 if st.session_state["code_needs_fixing"]:
     corrected_code = st.text_area("🛠️ Edit and Improve Your Code:", st.session_state["code"], height=300)
     if st.button("🔄 Submit Revised Code"):
-        st.markdown(f"## 🚀 Running Analysis: {st.session_state['execution_plan'][st.session_state['last_checked_agent_index']].name}")
-        st.session_state["code"] = corrected_code
-        st.session_state["running_analysis"] = True
-        st.session_state["code_needs_fixing"] = False
-        st.session_state["waiting_for_next"] = False
-        st.rerun()
-        
+        try:
+            st.markdown(f"## 🚀 Running Analysis: {st.session_state['execution_plan'][st.session_state['last_checked_agent_index']].name}")
+            st.session_state["code"] = corrected_code
+            st.session_state["running_analysis"] = True
+            st.session_state["code_needs_fixing"] = False
+            st.session_state["waiting_for_next"] = False
+            st.rerun()
+        except Exception as e:
+            st.error(f"Error submitting revised code: {e}")
+
 if st.button("🔄 Restart Workflow"):
-    for key in list(st.session_state.keys()):
-        del st.session_state[key]  # Clears all stored session state variables
-    st.rerun()
+    try:
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]  # Clears all stored session state variables
+        st.rerun()
+    except Exception as e:
+        st.error(f"Error restarting workflow: {e}")
 
