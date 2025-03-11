@@ -10,15 +10,21 @@ def style_analysis(code):
         formatted_code = black.format_str(code, mode=black.Mode())
     except black.NothingChanged:
         formatted_code = code  # If no changes are made, return the original code
+    except Exception as e:
+        return {"error": f"Error analyzing code style: {str(e)}"}
 
     # Compare the original code with the formatted code to identify issues
-    diff = difflib.unified_diff(code.splitlines(), formatted_code.splitlines())
-    issues = []
+    try:
+        diff = difflib.unified_diff(code.splitlines(), formatted_code.splitlines())
+        issues = []
 
-    # Identify lines that need changes
-    for line in diff:
-        if line.startswith('- ') or line.startswith('+ '):
-            issues.append({"line": line.strip(), "message": "Code needs formatting."})
+        # Identify lines that need changes
+        for line in diff:
+            if line.startswith('- ') or line.startswith('+ '):
+                issues.append({"line": line.strip(), "message": "Code needs formatting."})
+    except Exception as e:
+        return {"error": f"Error comparing code formatting: {str(e)}"}
+    
     return {"black_analysis": formatted_code, "issues": issues}
 
 # Create the Tool using Black formatting for analysis

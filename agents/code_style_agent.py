@@ -18,11 +18,17 @@ class CodeStyleAgent:
         Code:
         {code}
         """
-        return query_gradio_client(plan_prompt)
+        try:
+            return query_gradio_client(plan_prompt)
+        except Exception as e:
+            return f"Error generating code style analysis plan: {str(e)}"
 
     def analyze_style(self, code):
         """Run the coding style tool and return its output."""
-        return self.tool.func(code)
+        try:
+            return self.tool.func(code)
+        except Exception as e:
+            return f"Error running code style analysis: {str(e)}"
 
     def generate_report(self, plan, tool_feedback, code):
         """Generate a final report based on the plan, tool feedback, and code."""
@@ -36,8 +42,11 @@ class CodeStyleAgent:
         Focus only on issues detected by black and ignore any comments in the code.
         Do not improve/revise the code.
         """
-        return query_gradio_client(report_prompt)
-
+        try:
+            return query_gradio_client(report_prompt)
+        except Exception as e:
+            return f"Error generating code style report: {str(e)}"
+        
     def check_report(self, report):
         """Check if there are coding style issues based on the report."""
         style_validation_prompt = f"""
@@ -46,13 +55,21 @@ class CodeStyleAgent:
         Report: {report}
         Answer only 'yes' if there are issues or 'no' if the code is fine.
         """
-        has_issues = query_gradio_client(style_validation_prompt).strip().lower() == "yes"
-        return not has_issues  # Returns True if code is fine, False otherwise.
+        try:
+            has_issues = query_gradio_client(style_validation_prompt).strip().lower() == "yes"
+            return not has_issues
+        except Exception as e:
+            return f"Error checking code style report: {str(e)}"
 
     def run(self, code):
         """Execute the coding style checking workflow."""
-        plan = self.create_plan(code)
-        tool_analysis = self.analyze_style(code)
-        report = self.generate_report(plan, tool_analysis, code)
-        is_valid = self.check_report(report)
-        return report, is_valid
+        try:  
+            plan = self.create_plan(code)
+            tool_analysis = self.analyze_style(code)
+            report = self.generate_report(plan, tool_analysis, code)
+            is_valid = self.check_report(report)
+            
+            return report, is_valid
+        except Exception as e:
+            return f"Error running code style analysis: {str(e)}", False
+    

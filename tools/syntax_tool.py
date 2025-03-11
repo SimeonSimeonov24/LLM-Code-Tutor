@@ -15,7 +15,6 @@ def syntax_analysis(code):
         # Handle unexpected parsing errors
         return [{"line": 0, "message": f"Error during parsing: {str(e)}"}]
 
-
 syntax_tool = Tool(
     name="Syntax Analysis Tool",
     func=syntax_analysis,

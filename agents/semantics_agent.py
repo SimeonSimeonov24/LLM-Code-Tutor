@@ -15,11 +15,17 @@ class SemanticsAgent:
         Code:
         {code}
         """
-        return query_gradio_client(plan_prompt)
+        try:
+            return query_gradio_client(plan_prompt)
+        except Exception as e:
+            return f"Error generating analysis plan: {str(e)}"
 
     def analyze_semantics(self, code):
         """Run the semantics tool and return its output."""
-        return self.tool.func(code)
+        try:
+            return self.tool.func(code)
+        except Exception as e:
+            return f"Error running semantics analysis: {str(e)}"
 
     def generate_report(self, plan, tool_feedback, code):
         """Generate a final report based on the plan, tool feedback, and code."""
@@ -32,7 +38,10 @@ class SemanticsAgent:
         Generate a short report summarizing all semantic issues within the code.
         Do not improve/revise the code.
         """
-        return query_gradio_client(report_prompt)
+        try:
+            return query_gradio_client(report_prompt)
+        except Exception as e:
+            return f"Error generating report: {str(e)}"
     
     def check_report(self, report):
         """Check if there are semantic issues based on the report."""
@@ -41,15 +50,21 @@ class SemanticsAgent:
         Report: {report}
         Answer only 'yes' if there are issues or 'no' if the code is fine.
         """
-        has_issues = query_gradio_client(semantics_validation_prompt).strip().lower() == "yes"
-        return not has_issues  # Returns True if code is fine, False otherwise.
+        try:
+            has_issues = query_gradio_client(semantics_validation_prompt).strip().lower() == "yes"
+            return not has_issues  # Returns True if code is fine, False otherwise.
+        except Exception as e:
+            return f"Error checking report: {str(e)}"
 
     def run(self, code):
         """Execute the semantics checking workflow."""
-        plan = self.create_plan(code)
-        tool_analysis = self.analyze_semantics(code)
-        report = self.generate_report(plan, tool_analysis, code)
+        try:
+            plan = self.create_plan(code)
+            tool_analysis = self.analyze_semantics(code)
+            report = self.generate_report(plan, tool_analysis, code)
 
-        is_valid = self.check_report(report)
+            is_valid = self.check_report(report)
 
-        return report, is_valid
+            return report, is_valid
+        except Exception as e:
+            return f"Error during syntax analysis workflow: {str(e)}", False
