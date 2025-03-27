@@ -17,12 +17,18 @@ class DocumentationAgent:
         Code:
         {code}
         """
-        return query_gradio_client(plan_prompt)
+        try:
+            return query_gradio_client(plan_prompt)
+        except Exception as e:
+            return f"Error generating documentation analysis plan: {str(e)}"
 
     def analyze_documentation(self, code):
         """Run the documentation analysis tool and return its output."""
-        return self.tool.func(code)
-
+        try:
+            return self.tool.func(code)
+        except Exception as e:
+            return f"Error running documentation analysis: {str(e)}"
+        
     def generate_report(self, plan, tool_feedback, code):
         """Generate a final report based on the plan, tool feedback, and code."""
         report_prompt = f"""
@@ -37,8 +43,10 @@ class DocumentationAgent:
 
         If there ARE issues, DO NOT say that all checks passed. Instead, provide clear feedback on what needs to be improved.
         """
-
-        return query_gradio_client(report_prompt).strip()
+        try:
+            return query_gradio_client(report_prompt)
+        except Exception as e:
+            return f"Error generating documentation report: {str(e)}"
 
     def check_analysis(self, analysis):
         """Check if there are documentation issues based on the report."""
@@ -47,15 +55,21 @@ class DocumentationAgent:
         Analysis: {analysis}
         Answer only 'yes' if there are issues or 'no' if the documentation is fine.
         """
-        has_issues = query_gradio_client(documentation_validation_prompt).strip().lower() == "yes"
-        return not has_issues  # Returns True if documentation is fine, False otherwise.
+        try:
+            has_issues = query_gradio_client(documentation_validation_prompt).strip().lower() == "yes"
+            return not has_issues
+        except Exception as e:
+            return f"Error checking documentation report: {str(e)}"
 
     def run(self, code):
         """Execute the documentation checking workflow."""
-        plan = self.create_plan(code)
-        tool_analysis = self.analyze_documentation(code)
-        report = self.generate_report(plan, tool_analysis, code)
+        try:
+            plan = self.create_plan(code)
+            tool_analysis = self.analyze_documentation(code)
+            report = self.generate_report(plan, tool_analysis, code)
 
-        is_valid = self.check_analysis(report)
+            is_valid = self.check_analysis(report)
 
-        return report, is_valid
+            return report, is_valid
+        except Exception as e:
+            return f"Error during documentation analysis workflow: {str(e)}", False            

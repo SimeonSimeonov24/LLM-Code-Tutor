@@ -5,13 +5,39 @@ class BestPracticesAgent:
         self.tool = tool
         self.name = "BestPracticesAgent"
 
+    def create_plan(self, code):
+        """Create a plan for analyzing best practices in the code."""
+        plan_prompt = f"""
+        You are an expert in software engineering best practices. Create a simple step-by-step plan of max 5 steps to analyze
+        the provided code for adherence to best practices.
+        Ensure your plan covers:
+        - Magic number detection
+        - Consistent variable naming and usage
+        - Proper use of constants
+        - Maintainability issues (excluding documentation)
+        - Any other relevant best practice violations
+        
+        Do not analyze or improve/revise the code yet.
+        
+        This is your Best Practices Analysis tool: {self.tool.description}
+
+        Code:
+        {code}
+        """
+        try:
+            return query_gradio_client(plan_prompt)
+        except Exception as e:
+            return f"Error generating best practices analysis plan: {str(e)}"
+
     def analyze_best_practices(self, code):
         """Runs the best practices analysis tool and gets all issues."""
-        return self.tool.func(code)
+        try:
+            return self.tool.func(code)
+        except Exception as e:
+            return f"Error running best practices analysis: {str(e)}"
     
     def analyze_magic_numbers(self, code):
         """Sends a prompt to the LLM to check for magic numbers while avoiding false positives from defined constants."""
-
         prompt = f"""
         You are an expert in software engineering best practices. Your task is to analyze Python code **only for magic numbers** and flag **only numbers that are directly used in expressions without being defined as constants first**.
 
@@ -24,15 +50,17 @@ class BestPracticesAgent:
             - **Line number**
             - **The problematic number**
             - **A brief reason why it is a magic number**
-        - If no violations exist, return **only**: `"No magic numbers found."`
+        - If no violations exist, return **only**: "No magic numbers found."
 
         ### Now analyze the following code:
         {code}
 
         **Provide your analysis below:**
         """
-        
-        return query_gradio_client(prompt).strip()
+        try:
+            return query_gradio_client(prompt).strip()
+        except Exception as e:
+            return f"Error analyzing magic numbers: {str(e)}"
 
     def generate_report(self, tool_feedback, magic_numbers_analysis, code):
         """Generates a clear and actionable best practices report."""
@@ -52,8 +80,10 @@ class BestPracticesAgent:
         Magic Numbers Analysis: {magic_numbers_analysis}
         Code: {code}
         """
-
-        return query_gradio_client(report_prompt).strip()
+        try:
+            return query_gradio_client(report_prompt).strip()
+        except Exception as e:
+            return f"Error generating best practices report: {str(e)}"
 
     def check_analysis(self, analysis):
         """Determines if the code fully follows best practices."""
@@ -62,14 +92,20 @@ class BestPracticesAgent:
         Analysis: {analysis}
         Answer **only** 'yes' if there are issues or 'no' if the code is fully correct.
         """
-        has_issues = query_gradio_client(validation_prompt).strip().lower() == "yes"
-        return not has_issues  # Returns True if code follows best practices, False otherwise.
+        try:
+            has_issues = query_gradio_client(validation_prompt).strip().lower() == "yes"
+            return not has_issues  # Returns True if code follows best practices, False otherwise.
+        except Exception as e:
+            return f"Error validating best practices analysis: {str(e)}"
 
     def run(self, code):
         """Runs the best practices checking workflow."""
-        tool_analysis = self.analyze_best_practices(code)
-        magic_numbers_analysis = self.analyze_magic_numbers(code)
-        report = self.generate_report(tool_analysis, magic_numbers_analysis, code)
-        is_valid = self.check_analysis(report)
-
-        return report, is_valid
+        try:
+            plan = self.create_plan(code)
+            tool_analysis = self.analyze_best_practices(code)
+            magic_numbers_analysis = self.analyze_magic_numbers(code)
+            report = self.generate_report(tool_analysis, magic_numbers_analysis, code)
+            is_valid = self.check_analysis(report)
+            return report, is_valid
+        except Exception as e:
+            return f"Error during best practices analysis workflow: {str(e)}", False

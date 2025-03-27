@@ -20,12 +20,18 @@ class CodeEfficiencyAgent:
         Code:
         {code}
         """
-        return query_gradio_client(plan_prompt)
+        try:
+            return query_gradio_client(plan_prompt)
+        except Exception as e:
+            return f"Error generating code efficiency analysis plan: {str(e)}"
 
     def analyze_efficiency(self, code):
         """Run the code efficiency analysis tool and return its output."""
-        return self.tool.func(code)
-
+        try:
+            return self.tool.func(code)
+        except Exception as e:
+            return f"Error running code efficiency analysis: {str(e)}"
+        
     def generate_report(self, plan, tool_feedback, code):
         """Generate a final report summarizing all efficiency issues and suggesting improvements."""
         report_prompt = f"""
@@ -43,9 +49,12 @@ class CodeEfficiencyAgent:
         - **Critical Issues:** [List significant performance-impacting problems]
         - **Minor Issues (Optional):** [List only if truly minor and not affecting performance]
         """
-        return query_gradio_client(report_prompt)
+        try:
+            return query_gradio_client(report_prompt)
+        except Exception as e:
+            return f"Error generating code efficiency report: {str(e)}"
 
-    def check_report(self, report):
+    def check_analysis(self, report):
         """Ensure code is not marked valid if critical issues exist and prevent over-reporting minor issues."""
         efficiency_validation_prompt = f"""
         You are a software optimization expert. Based on the following efficiency report, determine if the code is efficient.
@@ -56,16 +65,19 @@ class CodeEfficiencyAgent:
         Report:
         {report}
         """
-        response = query_gradio_client(efficiency_validation_prompt).strip().lower()
-
-        if response == "no":
-            return False  # Code is inefficient due to critical issues.
-        return True  # Code is valid if no critical issues exist.
+        try:
+            has_issues = query_gradio_client(efficiency_validation_prompt).strip().lower() == "yes"
+            return not has_issues
+        except Exception as e:
+            return f"Error checking error handling report: {str(e)}"
 
     def run(self, code):
         """Execute the code efficiency checking workflow."""
-        plan = self.create_plan(code)
-        tool_analysis = self.analyze_efficiency(code)
-        report = self.generate_report(plan, tool_analysis, code)
-        is_valid = self.check_report(report)
-        return report, is_valid
+        try:
+            plan = self.create_plan(code)
+            tool_analysis = self.analyze_efficiency(code)
+            report = self.generate_report(plan, tool_analysis, code)
+            is_valid = self.check_analysis(report)
+            return report, is_valid
+        except Exception as e:
+            return f"Error running code efficiency analysis: {str(e)}", False

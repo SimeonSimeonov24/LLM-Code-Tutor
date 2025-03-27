@@ -23,11 +23,17 @@ class SecurityAnalysisAgent:
         Code:
         {code}
         """
-        return query_gradio_client(plan_prompt)
+        try:
+            return query_gradio_client(plan_prompt)
+        except Exception as e:
+            return f"Error generating security analysis plan: {str(e)}"
 
     def analyze_security(self, code):
         """Run the security analysis tool and return its output."""
-        return self.tool.func(code)
+        try:
+            return self.tool.func(code)
+        except Exception as e:
+            return f"Error running security analysis: {str(e)}"
 
     def generate_report(self, plan, tool_feedback, code):
         """Generate a final security report based on the plan, tool feedback, and code."""
@@ -45,8 +51,11 @@ class SecurityAnalysisAgent:
 
         Do not improve/revise the code.
         """
-        return query_gradio_client(report_prompt)
-
+        try:
+            return query_gradio_client(report_prompt)
+        except Exception as e:
+            return f"Error generating security report: {str(e)}"
+    
     def check_report(self, report, tool_feedback):
         """Check if there are security issues based on the report."""
         security_validation_prompt = f"""
@@ -57,14 +66,19 @@ class SecurityAnalysisAgent:
         Answer only 'yes' if there are vulnerabilities such as anything over MEDIUM severity.
         Answer only 'no' if the code is secure or only contains 1-2 LOW severity issues.
         """
-        has_issues = query_gradio_client(security_validation_prompt).strip().lower() == "yes"
-        return not has_issues  # Returns True if code is secure, False otherwise.
+        try:
+            has_issues = query_gradio_client(security_validation_prompt).strip().lower() == "yes"
+            return not has_issues  # Returns True if code is secure, False otherwise.
+        except Exception as e:
+            return f"Error checking security report: {str(e)}"
 
     def run(self, code):
         """Execute the security checking workflow."""
-        plan = self.create_plan(code)
-        tool_analysis = self.analyze_security(code)
-        report = self.generate_report(plan, tool_analysis, code)
-        is_secure = self.check_report(report, tool_analysis)
-        return report, is_secure
-
+        try:
+            plan = self.create_plan(code)
+            tool_analysis = self.analyze_security(code)
+            report = self.generate_report(plan, tool_analysis, code)
+            is_valid = self.check_report(report, tool_analysis)
+            return report, is_valid
+        except Exception as e:
+            return f"Error during security analysis workflow: {str(e)}", False
